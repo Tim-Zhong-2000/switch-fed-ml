@@ -41,13 +41,16 @@ class Job:
 
     
     def handle_retransmission_packet(self, pkt: Packet):
+        self._finish_lock.acquire()
+        buffer_pkt = self.buffer[pkt.segment_id]
         if self.bitmap[pkt.segment_id] == 0:
-            if self.buffer[pkt.segment_id] is None:
+            if buffer_pkt is None:
                 self.buffer[pkt.segment_id] = pkt
             else:
-                self.buffer[pkt.segment_id].tensor += pkt.tensor
-                self.buffer[pkt.segment_id].aggregate_num += pkt.aggregate_num
-                
+                buffer_pkt.tensor += pkt.tensor
+                buffer_pkt.aggregate_num += pkt.aggregate_num
+        self._finish_lock.release()
+
     def handle_meta(self, meta: bytes):
         self.meta = pickle.loads(meta)
         
@@ -57,6 +60,6 @@ class Job:
             print("WARNING: 丢包检测时需要提供检测范围")
             return missing_slice
         self.total_packet_num = range_end + 1
-        print("丢包id")
-        print(missing_slice[missing_slice <= range_end])
+        # print("丢包id")
+        # print(missing_slice[missing_slice <= range_end])
         return missing_slice[missing_slice <= range_end] 

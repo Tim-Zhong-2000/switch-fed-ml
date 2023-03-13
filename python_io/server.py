@@ -26,8 +26,8 @@ class Server(Node):
         for i in range(total_packet_num):
             self.tx_sock.sendto(packet_list[i].buffer, server_addr)
             # TODO: 限速
-            if i % 100 == 0:
-                time.sleep(0.005)
+            if i % 50 == 0:
+                time.sleep(0.002)
         send_end = time.time()
 
         resend_time = 0
@@ -51,7 +51,7 @@ class Server(Node):
 
         print("server 发送结束 发送耗时 %f 发送速率 %f Mbps 重传耗时 %f" % (
             send_end - send_start,
-            elemenet_per_packet * total_packet_num * 4 /
+            element_per_packet * total_packet_num * 4 /
             1024 / 1024 * 8 / (send_end - send_start),
             resend_time))
             

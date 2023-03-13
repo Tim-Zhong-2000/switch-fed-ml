@@ -2,6 +2,7 @@ from server import Server
 from client import Client
 from switch import Switch
 import numpy as np
+from packet import element_per_packet
 from multiprocessing import Process
 from threading import Thread
 
@@ -100,14 +101,14 @@ def server_send():
     )
     switch.add_child(client)
 
-    data = np.random.rand((256 * pkt_num)).astype(np.float32)
+    data = np.random.rand((element_per_packet * pkt_num)).astype(np.float32)
     packet_list = [
         server.create_packet(
             round_id=round_id,
             segment_id=i,
             group_id=0,
             bypass=False,
-            data=data[i*256:(i+1)*256],
+            data=data[i*element_per_packet:(i+1)*element_per_packet],
             multicast=True
         ) for i in range(pkt_num)
     ]

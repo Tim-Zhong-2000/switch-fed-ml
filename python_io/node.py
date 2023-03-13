@@ -198,8 +198,8 @@ class Node:
             key: tuple = (pkt.round_id, pkt.node_id)
             job = self.rx_jobs.get(key)
             if job is None:
-                print("WARNING: receive job not exist! round_id:%d node_id:%d" % (
-                    pkt.round_id, pkt.node_id))
+                print("WARNING(%s): receive job not exist! round_id:%d node_id:%d" % (
+                    self.type, pkt.round_id, pkt.node_id))
                 continue
             job.handle_packet(pkt)
             # if pkt.aggregate_num == 1:
@@ -215,7 +215,7 @@ class Node:
         - node_id: 发送方 node_id
         - group_id: 分组号，用于剪枝
         - bypass: 是否禁用 switch 聚合
-        - data: 有效数据，必须是长度为 256 的 float32 一维数组
+        - data: 有效数据，必须是长度为 elemenet_per_packet 的 float32 一维数组
 
         创建的包可以直接发送，不推荐手动操作数据
         """
@@ -237,6 +237,6 @@ class Node:
             pool_id=segment_id % switch_pool_size
         )
         pkt.deparse_header()
-        pkt.set_tensor(data[:elemenet_per_packet])
+        pkt.set_tensor(data[:element_per_packet])
         pkt.deparse_payload()
         return pkt

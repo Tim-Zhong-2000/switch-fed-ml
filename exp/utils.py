@@ -1,4 +1,4 @@
-from node import Node, elemenet_per_packet
+from node import Node, element_per_packet
 from prune_tool import Patch, dump_patches, load_patches
 from cnn import SparseCNN
 from packet import Packet
@@ -23,8 +23,8 @@ def pack(sender: Node, round_id: int,  mini_model: SparseCNN, patches_list: List
     mini_model_data = mini_model_data.detach().numpy()
 
     model_data_len = len(mini_model_data)
-    mini_model_packet_num = int(model_data_len / elemenet_per_packet)
-    mini_model_packet_num += 0 if model_data_len % elemenet_per_packet == 0 else 1
+    mini_model_packet_num = int(model_data_len / element_per_packet)
+    mini_model_packet_num += 0 if model_data_len % element_per_packet == 0 else 1
     group_len_meta.append((mini_model_packet_num, model_data_len))
     for i in range(mini_model_packet_num):
         pkt_list.append(
@@ -33,8 +33,8 @@ def pack(sender: Node, round_id: int,  mini_model: SparseCNN, patches_list: List
                 seg_id,
                 len(group_len_meta),
                 False,
-                mini_model_data[i * elemenet_per_packet:],
-                True
+                mini_model_data[i * element_per_packet:],
+                sender.type == "server"
             )
         )
         seg_id += 1
@@ -49,8 +49,8 @@ def pack(sender: Node, round_id: int,  mini_model: SparseCNN, patches_list: List
     for data in patches_data_list:
         data = data.detach().numpy()
         data_len = len(data)
-        packet_num = int(data_len / elemenet_per_packet)
-        packet_num += 0 if data_len % elemenet_per_packet == 0 else 1
+        packet_num = int(data_len / element_per_packet)
+        packet_num += 0 if data_len % element_per_packet == 0 else 1
         group_len_meta.append((packet_num, data_len))
         for i in range(packet_num):
             pkt_list.append(
@@ -59,8 +59,8 @@ def pack(sender: Node, round_id: int,  mini_model: SparseCNN, patches_list: List
                     seg_id,
                     len(group_len_meta),
                     False,
-                    data[i * elemenet_per_packet:],
-                    True
+                    data[i * element_per_packet:],
+                    sender.type == "server"
                 )
             )
             seg_id += 1
@@ -82,7 +82,7 @@ def unpack(
     cursor = 0
     # 解包 mini_model,
     mini_model_data = torch.cat(
-        [torch.tensor(pkt.tensor) for pkt in pkt_list[cursor: cursor + group_len_meta[0][0]]])
+        [(torch.tensor(pkt.tensor) / pkt.aggregate_num) for pkt in pkt_list[cursor: cursor + group_len_meta[0][0]]])
     cursor += group_len_meta[0][0]
 
     # 解包 patch
@@ -91,7 +91,7 @@ def unpack(
         if cursor + pkt_len > len(pkt_list):
             break
         t = torch.cat(
-            [torch.tensor(pkt.tensor) / pkt.aggregate_num for pkt in pkt_list[cursor: cursor + pkt_len]])[:actual_len]
+            [(torch.tensor(pkt.tensor) / pkt.aggregate_num) for pkt in pkt_list[cursor: cursor + pkt_len]])[:actual_len]
         patches_list.append(load_patches(patches_meta, t))
         cursor += pkt_len
     return SparseCNN(mini_model_meta, mini_model_data), patches_list
